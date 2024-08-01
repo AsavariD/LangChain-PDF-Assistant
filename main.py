@@ -80,12 +80,25 @@ def main():
         st.session_state.rag_chain = setup_prompt_and_chain(vectorstore)
 
     if st.session_state.uploaded_file is not None:
-        question = st.text_input("Ask a question about the pdf")
+        if "messages" not in st.session_state:
+            st.session_state["messages"] = [
+                {"role": "assistant", "content": "Ask a question about the pdf"}
+            ]
+
+        for msg in st.session_state.messages:
+            st.chat_message(msg["role"]).write(msg["content"])
+
+        question = st.chat_input()
         if question:
+            st.session_state.messages.append({"role": "user", "content": question})
+            st.chat_message("user").write(question)
             results = st.session_state.rag_chain.invoke({"input": question})
             logging.info(results["context"][0].metadata)
             logging.info(results["answer"])
-            st.write("Answer: ", results["answer"])
+            st.session_state.messages.append(
+                {"role": "assistant", "content": results["answer"]}
+            )
+            st.chat_message("assistant").write(results["answer"])
 
 
 if __name__ == "__main__":
